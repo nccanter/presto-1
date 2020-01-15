@@ -201,21 +201,11 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 import io.airlift.units.DataSize;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.objectweb.asm.MethodTooLargeException;
 
 import javax.inject.Inject;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -1280,8 +1270,8 @@ public class LocalExecutionPlanner
                 }
             }
             catch (RuntimeException e) {
-                if (ExceptionUtils.getRootCause(e) instanceof MethodTooLargeException) {
-                    throw new PrestoException(CONSTRAINT_VIOLATION,
+                if (getExceptionRootCause(e) instanceof MethodTooLargeException) {
+                    throw new PrestoException(COMPILER_ERROR,
                             "Query exceeded maximum columns or filters. Please reduce the number of columns and filters referenced and re-run the query.", e);
                 }
                 throw new PrestoException(COMPILER_ERROR, "Compiler failed", e);
@@ -2831,6 +2821,15 @@ public class LocalExecutionPlanner
                         useSystemMemory);
             }
         }
+    }
+
+    private static Throwable getExceptionRootCause(Throwable throwable) {
+        Set<Throwable> seen = new HashSet<>();
+        while (throwable.getCause() != null && !seen.contains(throwable)) {
+            seen.add(throwable);
+            throwable = throwable.getCause();
+        }
+        return throwable;
     }
 
     private static TableFinisher createTableFinisher(Session session, Metadata metadata, ExecutionWriterTarget target)
