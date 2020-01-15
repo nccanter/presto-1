@@ -201,6 +201,8 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 import io.airlift.units.DataSize;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.objectweb.asm.MethodTooLargeException;
 
 import javax.inject.Inject;
 
@@ -247,6 +249,7 @@ import static com.facebook.presto.operator.TableWriterUtils.STATS_START_CHANNEL;
 import static com.facebook.presto.operator.WindowFunctionDefinition.window;
 import static com.facebook.presto.operator.unnest.UnnestOperator.UnnestOperatorFactory;
 import static com.facebook.presto.spi.StandardErrorCode.COMPILER_ERROR;
+import static com.facebook.presto.spi.StandardErrorCode.CONSTRAINT_VIOLATION;
 import static com.facebook.presto.spi.plan.AggregationNode.Step.FINAL;
 import static com.facebook.presto.spi.plan.AggregationNode.Step.INTERMEDIATE;
 import static com.facebook.presto.spi.plan.AggregationNode.Step.PARTIAL;
@@ -1276,10 +1279,11 @@ public class LocalExecutionPlanner
                     return new PhysicalOperation(operatorFactory, outputMappings, context, source);
                 }
             }
-            catch (PrestoException e) {
-                throw e;
-            }
             catch (RuntimeException e) {
+                if (ExceptionUtils.getRootCause(e) instanceof MethodTooLargeException) {
+                    throw new PrestoException(CONSTRAINT_VIOLATION,
+                            "Query exceeded maximum columns or filters. Please reduce the number of columns and filters referenced and re-run the query.", e);
+                }
                 throw new PrestoException(COMPILER_ERROR, "Compiler failed", e);
             }
         }

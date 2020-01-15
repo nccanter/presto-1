@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 
 import static com.facebook.airlift.testing.Closeables.closeAllRuntimeException;
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
-import static com.facebook.presto.spi.StandardErrorCode.COMPILER_ERROR;
+import static com.facebook.presto.spi.StandardErrorCode.CONSTRAINT_VIOLATION;
 import static java.util.Collections.nCopies;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -52,7 +52,7 @@ public class TestLocalExecutionPlanner
         // structure the query this way to avoid stack overflow when parsing
         String inner = "(" + Joiner.on(" + ").join(nCopies(100, "rand()")) + ")";
         String outer = Joiner.on(" + ").join(nCopies(100, inner));
-        assertFails("SELECT " + outer, COMPILER_ERROR);
+        assertFails("SELECT " + outer, CONSTRAINT_VIOLATION);
     }
 
     private void assertFails(@Language("SQL") String sql, ErrorCodeSupplier supplier)
@@ -63,6 +63,8 @@ public class TestLocalExecutionPlanner
         }
         catch (PrestoException e) {
             assertEquals(e.getErrorCode(), supplier.toErrorCode());
+            assertEquals("Query exceeded maximum columns or filters. " +
+                    "Please reduce the number of columns and filters referenced and re-run the query.", e.getMessage());
         }
     }
 }
