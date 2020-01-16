@@ -63,6 +63,8 @@ public class TestLocalExecutionPlanner
         }
         catch (PrestoException e) {
             assertEquals(e.getErrorCode(), supplier.toErrorCode());
+            assertEquals("Query exceeded maximum columns or filters. " +
+                    "Please reduce the number of columns and filters referenced and re-run the query.", e.getMessage());
         }
     }
 }
