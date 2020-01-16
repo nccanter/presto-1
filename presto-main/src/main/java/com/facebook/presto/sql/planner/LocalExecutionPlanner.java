@@ -1278,7 +1278,7 @@ public class LocalExecutionPlanner
                     return new PhysicalOperation(operatorFactory, outputMappings, context, source);
                 }
             }
-            catch (RuntimeException e) {
+            catch (PrestoException e) {
                 if (getExceptionRootCause(e) instanceof MethodTooLargeException) {
                     throw new PrestoException(COMPILER_ERROR,
                             "Query exceeded maximum columns or filters. Please reduce the number of columns and filters referenced and re-run the query.", e);
